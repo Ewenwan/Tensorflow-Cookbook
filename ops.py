@@ -2,31 +2,44 @@ import tensorflow as tf
 import numpy as np
 
 ##################################################################################
-# Initialization
+# Initialization 初始化
 ##################################################################################
 
-# Xavier : tf.contrib.layers.xavier_initializer()
-# He : tf.contrib.layers.variance_scaling_initializer()
-# Normal : tf.random_normal_initializer(mean=0.0, stddev=0.02)
-# Truncated_normal : tf.truncated_normal_initializer(mean=0.0, stddev=0.02)
-# Orthogonal : tf.orthogonal_initializer(1.0) / # relu = sqrt(2), the others = 1.0
+# Xavier : tf.contrib.layers.xavier_initializer() # 用于初始化权重的初始化程序                           
+                                                  # 保持每一层的梯度大小都差不多相同
+                                                  # 扇入和扇出之间的平均值
+                                '''
+                                xavier_initializer(
+                                    uniform=True, # 使用uniform 或者 normal分布 来随机初始化。
+                                    seed=None,    # 可以认为是用来生成随机数的seed(种子)
+                                    dtype=tf.float32 # 只支持浮点数
+                                )
+                                '''
+# He : tf.contrib.layers.variance_scaling_initializer() # 保证输入变量的变化尺度不变，从而避免变化尺度在最后一层网络中爆炸或者弥散。
+                                                        # 只考虑了扇入， mode = “fan_avg” 改为 扇入和扇出之间的平均值
+# Normal : tf.random_normal_initializer(mean=0.0, stddev=0.02) # 正态分布
+# Truncated_normal : tf.truncated_normal_initializer(mean=0.0, stddev=0.02) # 从截断的正态分布中输出随机值
+# Orthogonal : tf.orthogonal_initializer(1.0) / # relu = sqrt(2), the others = 1.0  # 正交矩阵的初始化器
 
 ##################################################################################
-# Regularization
+# Regularization  正则化 规则化 归一化
 ##################################################################################
 
 # l2_decay : tf.contrib.layers.l2_regularizer(0.0001)
 # orthogonal_regularizer : orthogonal_regularizer(0.0001) # orthogonal_regularizer_fully(0.0001)
 
-weight_init = tf.truncated_normal_initializer(mean=0.0, stddev=0.02)
-weight_regularizer = tf.contrib.layers.l2_regularizer(0.0001)
+weight_init = tf.truncated_normal_initializer(mean=0.0, stddev=0.02) # 初始化 从截断的正态分布中输出随机值
+weight_regularizer = tf.contrib.layers.l2_regularizer(0.0001)        # 正则化 
+                                                                     # L2正则化是一种减少过拟合的方法，在损失函数中加入刻画模型复杂程度的指标。
+                                                                     # 模型参数的平方和
 weight_regularizer_fully = tf.contrib.layers.l2_regularizer(0.0001)
 
 ##################################################################################
-# Layers
+# Layers    层
 ##################################################################################
 
 # padding='SAME' ======> pad = ceil[ (kernel - stride) / 2 ]
+# basic conv 正常卷积层
 def conv(x, channels, kernel=4, stride=2, pad=0, pad_type='zero', use_bias=True, sn=False, scope='conv_0'):
     with tf.variable_scope(scope):
         if pad > 0:
@@ -115,7 +128,7 @@ def partial_conv(x, channels, kernel=3, stride=2, use_bias=True, padding='SAME',
 
         return x
 
-
+#  空洞卷积
 def dilate_conv(x, channels, kernel=3, rate=2, use_bias=True, padding='SAME', sn=False, scope='conv_0'):
     with tf.variable_scope(scope):
         w = tf.get_variable("kernel", shape=[kernel, kernel, x.get_shape()[-1], channels], initializer=weight_init,
@@ -131,7 +144,7 @@ def dilate_conv(x, channels, kernel=3, rate=2, use_bias=True, padding='SAME', sn
 
         return x
 
-
+# 反卷积
 def deconv(x, channels, kernel=4, stride=2, padding='SAME', use_bias=True, sn=False, scope='deconv_0'):
     with tf.variable_scope(scope):
         x_shape = x.get_shape().as_list()
